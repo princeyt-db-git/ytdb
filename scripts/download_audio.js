@@ -9,7 +9,7 @@ const DOWNLOAD_DIR = path.join(__dirname, "..", "audio");
 const DOWNLOADS_JSON = path.join(__dirname, "..", "downloads.json");
 const MAX_RETRIES = 3;
 const CHANNEL_ID = "UCH3pkLXHGkc64_kOaqym4lg"; // 🔥 Hardcoded Channel ID
-const FILE_BASE_URL = "https://rr2sncnoaqxalgooglevideorr3sncnoaqxalgooglevideorr2sncnoaq.pages.dev/audio";
+const FILE_BASE_URL = "https://randomprinceyt.netlify.app/audio";
 
 // Ensure the download directory exists
 if (!fs.existsSync(DOWNLOAD_DIR)) {
