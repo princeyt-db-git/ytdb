@@ -14,6 +14,21 @@ jobs:
         uses: actions/checkout@v3
         with:
           fetch-depth: 0  # Fetch all history for proper git operations
+          lfs: true  # Enable Git LFS
+      
+      - name: Set up Git LFS
+        run: |
+          git lfs install
+          # Create .gitattributes file if it doesn't exist
+          if [ ! -f .gitattributes ]; then
+            echo "*.webm filter=lfs diff=lfs merge=lfs -text" > .gitattributes
+            echo "*.mp3 filter=lfs diff=lfs merge=lfs -text" >> .gitattributes
+            git add .gitattributes
+            git config --global user.name "github-actions"
+            git config --global user.email "github-actions@github.com"
+            git commit -m "Add Git LFS configuration for audio files"
+            git push
+          fi
       
       - name: Set up Node.js
         uses: actions/setup-node@v3
@@ -170,12 +185,15 @@ jobs:
               try {
                   execSync("git config --global user.name 'github-actions'");
                   execSync("git config --global user.email 'github-actions@github.com'");
+                  // Make sure the file is tracked by Git LFS before committing
+                  execSync(`git lfs track "${filePath}"`);
                   execSync(`git add "${filePath}" "${DOWNLOADS_JSON}"`);
                   execSync(`git commit -m "Add downloaded audio: ${title} (${videoId})"`);
                   execSync("git push");
                   console.log(`📤 Committed and pushed ${filePath}`);
               } catch (err) {
                   console.error("❌ Error committing file:", err.message);
+                  console.error(err);
               }
           }
           EOL
