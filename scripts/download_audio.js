@@ -7,7 +7,7 @@ const MP3_API = "https://backendmix.vercel.app/mp3";
 const CHANNEL_API = "https://backendmix-emergeny.vercel.app/list";
 const DOWNLOAD_DIR = path.join(__dirname, "..", "audio");
 const DOWNLOADS_JSON = path.join(__dirname, "..", "downloads.json");
-const MAX_RETRIES = 3;
+const MAX_RETRIES = 10;
 const CHANNEL_ID = "UCH3pkLXHGkc64_kOaqym4lg"; // 🔥 Hardcoded Channel ID
 const FILE_BASE_URL = "https://randomprinceyt.netlify.app/audio";
 
