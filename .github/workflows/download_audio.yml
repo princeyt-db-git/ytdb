@@ -16,6 +16,11 @@ jobs:
           fetch-depth: 0  # Fetch all history for proper git operations
           lfs: true  # Enable Git LFS
       
+      - name: Configure Git
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+      
       - name: Set up Git LFS
         run: |
           git lfs install
@@ -24,9 +29,9 @@ jobs:
             echo "*.webm filter=lfs diff=lfs merge=lfs -text" > .gitattributes
             echo "*.mp3 filter=lfs diff=lfs merge=lfs -text" >> .gitattributes
             git add .gitattributes
-            git config --global user.name "github-actions"
-            git config --global user.email "github-actions@github.com"
             git commit -m "Add Git LFS configuration for audio files"
+            # Pull with rebase before pushing to avoid non-fast-forward errors
+            git pull --rebase origin main
             git push
           fi
       
@@ -183,12 +188,32 @@ jobs:
 
           function commitFile(filePath, videoId, title) {
               try {
-                  execSync("git config --global user.name 'github-actions'");
-                  execSync("git config --global user.email 'github-actions@github.com'");
-                  // Make sure the file is tracked by Git LFS before committing
-                  execSync(`git lfs track "${filePath}"`);
+                  // Make sure Git is configured
+                  const gitName = "github-actions";
+                  const gitEmail = "github-actions@github.com";
+                  execSync(`git config --global user.name "${gitName}"`);
+                  execSync(`git config --global user.email "${gitEmail}"`);
+                  
+                  // Make sure the file is tracked by Git LFS
+                  execSync(`git lfs track "*.webm"`);
+                  
+                  // Add the files
                   execSync(`git add "${filePath}" "${DOWNLOADS_JSON}"`);
+                  
+                  // Commit
                   execSync(`git commit -m "Add downloaded audio: ${title} (${videoId})"`);
+                  
+                  // Pull changes before pushing to avoid non-fast-forward errors
+                  try {
+                      execSync("git pull --rebase origin main");
+                  } catch (pullErr) {
+                      console.error("Warning: Git pull failed, attempting to resolve conflicts");
+                      // If there are conflicts, try to resolve by keeping both versions
+                      execSync("git checkout --theirs .");
+                      execSync("git add .");
+                  }
+                  
+                  // Push changes
                   execSync("git push");
                   console.log(`📤 Committed and pushed ${filePath}`);
               } catch (err) {
