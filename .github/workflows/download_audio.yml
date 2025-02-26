@@ -1,227 +1,28 @@
-# Download YouTube Channel Audios
 name: Download YouTube Channel Audios
+
 on:
   schedule:
     - cron: '0 */3 * * *'  # Runs every 3 hours (00:00, 03:00, 06:00, etc. UTC)
   workflow_dispatch:  # Allows manual trigger
+
 permissions:
   contents: write  # ✅ Allows pushing changes to the repo
+
 jobs:
   download-audio:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
-        with:
-          fetch-depth: 0  # Fetch all history for proper git operations
-          lfs: true  # Enable Git LFS
-      
-      - name: Configure Git
-        run: |
-          git config --global user.name "github-actions"
-          git config --global user.email "github-actions@github.com"
-      
-      - name: Set up Git LFS
-        run: |
-          git lfs install
-          # Create .gitattributes file if it doesn't exist
-          if [ ! -f .gitattributes ]; then
-            echo "*.webm filter=lfs diff=lfs merge=lfs -text" > .gitattributes
-            echo "*.mp3 filter=lfs diff=lfs merge=lfs -text" >> .gitattributes
-            git add .gitattributes
-            git commit -m "Add Git LFS configuration for audio files"
-            # Pull with rebase before pushing to avoid non-fast-forward errors
-            git pull --rebase origin main
-            git push
-          fi
-      
+
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
           node-version: 20
-      
+
       - name: Install dependencies
-        run: npm install axios
-      
-      - name: Create scripts directory if it doesn't exist
-        run: mkdir -p scripts
-      
-      - name: Create download script
-        run: |
-          cat > scripts/download_audio.js << 'EOL'
-          const axios = require("axios");
-          const fs = require("fs");
-          const path = require("path");
-          const { execSync } = require("child_process");
+        run: npm install axios fs
 
-          const MP3_API = "https://backendmix.vercel.app/mp3";
-          const CHANNEL_API = "https://backendmix-emergeny.vercel.app/list";
-          const DOWNLOAD_DIR = path.join(__dirname, "..", "audio");
-          const DOWNLOADS_JSON = path.join(__dirname, "..", "downloads.json");
-          const MAX_RETRIES = 10;
-          const CHANNEL_ID = "UCH3pkLXHGkc64_kOaqym4lg"; // 🔥 Hardcoded Channel ID
-          const FILE_BASE_URL = "https://randomprinceyt.netlify.app/audio";
-
-          // Ensure the download directory exists
-          if (!fs.existsSync(DOWNLOAD_DIR)) {
-              fs.mkdirSync(DOWNLOAD_DIR, { recursive: true });
-          }
-
-          // Load existing downloads data and update old file paths
-          let downloadsData = {};
-          if (fs.existsSync(DOWNLOADS_JSON)) {
-              try {
-                  downloadsData = JSON.parse(fs.readFileSync(DOWNLOADS_JSON, "utf-8"));
-                  for (const videoId in downloadsData) {
-                      if (!downloadsData[videoId].filePath.startsWith(FILE_BASE_URL)) {
-                          downloadsData[videoId].filePath = `${FILE_BASE_URL}${videoId}.webm`;
-                      }
-                  }
-                  fs.writeFileSync(DOWNLOADS_JSON, JSON.stringify(downloadsData, null, 2));
-              } catch (err) {
-                  console.error("❌ Failed to load downloads.json, resetting file.");
-                  downloadsData = {};
-              }
-          }
-
-          (async () => {
-              try {
-                  console.log(`🔍 Fetching videos for channel ID: ${CHANNEL_ID}...`);
-                  const response = await axios.get(`${CHANNEL_API}/${CHANNEL_ID}`);
-
-                  if (!response.data || !response.data.videos || response.data.videos.length === 0) {
-                      console.error("❌ No videos found for this channel.");
-                      process.exit(1);
-                  }
-
-                  const videoIds = response.data.videos;
-                  console.log(`📹 mujhe ${videoIds.length} videos mili h dekhta hu kitni bachi h`);
-
-                  for (const videoId of videoIds) {
-                      const filename = `${videoId}.webm`;
-                      const filePath = path.join(DOWNLOAD_DIR, filename);
-                      const fileUrl = `${FILE_BASE_URL}${filename}`;
-
-                      // Skip if already downloaded and valid
-                      if (downloadsData[videoId] && fs.existsSync(filePath) && downloadsData[videoId].size > 0) {
-                          console.log(`⏭️ isko ${videoId}, Skip kar rha hu kyoki sahi h`);
-                          continue;
-                      }
-
-                      console.log(`🎵 kisa download kar rha hu samjha kya ${videoId}...`);
-
-                      let success = false;
-                      for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-                          try {
-                              console.log(`🔄 Attempt ${attempt}/${MAX_RETRIES}...`);
-
-                              // Get the download URL and filename from the MP3 API
-                              const downloadResponse = await axios.get(`${MP3_API}/${videoId}`);
-                              const { url, filename: videoTitle } = downloadResponse.data;
-
-                              if (!url) {
-                                  throw new Error("phuck ho ga guru");
-                              }
-
-                              // Clean up filename to use as title (remove .mp3 extension if present)
-                              const title = videoTitle 
-                                  ? videoTitle.replace(/\.mp3$/, '').trim() 
-                                  : `Video ${videoId}`;
-
-                              // Download the audio file
-                              const writer = fs.createWriteStream(filePath);
-                              const audioResponse = await axios({
-                                  url,
-                                  method: "GET",
-                                  responseType: "stream",
-                                  timeout: 30000
-                              });
-
-                              audioResponse.data.pipe(writer);
-
-                              await new Promise((resolve, reject) => {
-                                  writer.on("finish", resolve);
-                                  writer.on("error", reject);
-                              });
-
-                              // Get file size
-                              const fileSize = fs.statSync(filePath).size;
-
-                              if (fileSize === 0) {
-                                  throw new Error("Downloaded file size is 0 bytes");
-                              }
-
-                              console.log(`✅ kaam ho gya guru ${filePath} (${(fileSize / 1024 / 1024).toFixed(2)} MB)`);
-                              console.log(`📝 Title from filename: ${title}`);
-
-                              // Save to downloads.json with the filename as title
-                              downloadsData[videoId] = {
-                                  title: title,
-                                  id: videoId,
-                                  filePath: fileUrl,
-                                  size: fileSize
-                              };
-
-                              fs.writeFileSync(DOWNLOADS_JSON, JSON.stringify(downloadsData, null, 2));
-
-                              // Commit the file immediately
-                              commitFile(filePath, videoId, title);
-                              success = true;
-                              break;
-                          } catch (err) {
-                              console.error(`⚠️ phuck ho gya guru ${videoId}: ${err.message}`);
-                              if (attempt === MAX_RETRIES) {
-                                  console.error(`❌ Failed after ${MAX_RETRIES} attempts, skipping.`);
-                              }
-                              await new Promise(resolve => setTimeout(resolve, 2000));
-                          }
-                      }
-
-                      if (!success) {
-                          console.error(`🚨 Skipped: ${videoId} due to repeated errors.`);
-                      }
-                  }
-              } catch (error) {
-                  console.error("❌ Error:", error.message);
-              }
-          })();
-
-          function commitFile(filePath, videoId, title) {
-              try {
-                  // Make sure Git is configured
-                  const gitName = "github-actions";
-                  const gitEmail = "github-actions@github.com";
-                  execSync(`git config --global user.name "${gitName}"`);
-                  execSync(`git config --global user.email "${gitEmail}"`);
-                  
-                  // Make sure the file is tracked by Git LFS
-                  execSync(`git lfs track "*.webm"`);
-                  
-                  // Add the files
-                  execSync(`git add "${filePath}" "${DOWNLOADS_JSON}"`);
-                  
-                  // Commit
-                  execSync(`git commit -m "Add downloaded audio: ${title} (${videoId})"`);
-                  
-                  // Pull changes before pushing to avoid non-fast-forward errors
-                  try {
-                      execSync("git pull --rebase origin main");
-                  } catch (pullErr) {
-                      console.error("Warning: Git pull failed, attempting to resolve conflicts");
-                      // If there are conflicts, try to resolve by keeping both versions
-                      execSync("git checkout --theirs .");
-                      execSync("git add .");
-                  }
-                  
-                  // Push changes
-                  execSync("git push");
-                  console.log(`📤 Committed and pushed ${filePath}`);
-              } catch (err) {
-                  console.error("❌ Error committing file:", err.message);
-                  console.error(err);
-              }
-          }
-          EOL
-      
       - name: Run download script
         run: node scripts/download_audio.js
