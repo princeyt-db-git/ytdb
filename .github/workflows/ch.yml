@@ -50,7 +50,7 @@ jobs:
 
                   console.log('Fetching channel data...');
                   const channelData = await httpsGet(
-                      'https://backendmix.vercel.app/c/UCr-BYW60bAtDcNtz6AoiHZQ'
+                      'https://backendmix.vercel.app/c/UCRidj8Tvrnf5jeIwzFDj0FQ'
                   );
 
                   if (channelData.status !== 'ok' || !channelData.videos) {
