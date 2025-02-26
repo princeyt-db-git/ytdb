@@ -8,7 +8,7 @@ const CHANNEL_API = "https://backendmix-emergeny.vercel.app/list";
 const DOWNLOAD_DIR = path.join(__dirname, "..", "audio");
 const DOWNLOADS_JSON = path.join(__dirname, "..", "downloads.json");
 const MAX_RETRIES = 10;
-const CHANNEL_ID = "UCr-BYW60bAtDcNtz6AoiHZQ"; // 🔥 Hardcoded Channel ID
+const CHANNEL_ID = "UCRidj8Tvrnf5jeIwzFDj0FQ"; // 🔥 Hardcoded Channel ID
 const FILE_BASE_URL = "https://github.com/princeyt-db-git/ytdb/raw/refs/heads/main/audio";
 
 // Ensure the download directory exists
