@@ -9,7 +9,7 @@ const DOWNLOAD_DIR = path.join(__dirname, "..", "audio");
 const DOWNLOADS_JSON = path.join(__dirname, "..", "downloads.json");
 const MAX_RETRIES = 10;
 const CHANNEL_ID = "UCRidj8Tvrnf5jeIwzFDj0FQ"; // 🔥 Hardcoded Channel ID
-const FILE_BASE_URL = "https://github.com/princeyt-db-git/ytdb/raw/refs/heads/main/audio";
+const FILE_BASE_URL = "https://github.com/princeyt-db-git/ytdb/raw/refs/heads/main/audio/";
 
 // Ensure the download directory exists
 if (!fs.existsSync(DOWNLOAD_DIR)) {
