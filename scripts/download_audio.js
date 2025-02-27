@@ -3,7 +3,7 @@ const fs = require("fs");
 const path = require("path");
 const { execSync } = require("child_process");
 
-const MP3_API = "https://lucia-test-signatures-christina.trycloudflare.com/audio";
+const MP3_API = "https://logical-remedy-schools-rpm.trycloudflare.com/audio";
 const CHANNEL_API = "https://backendmix-emergeny.vercel.app/list";
 const DOWNLOAD_DIR = path.join(__dirname, "..", "audio");
 const DOWNLOADS_JSON = path.join(__dirname, "..", "downloads.json");
